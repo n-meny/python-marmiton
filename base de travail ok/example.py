@@ -1,4 +1,5 @@
-from marmiton import Marmiton
+from api_marmiton import Marmiton
+
 
 # Search :
 query_options = {
@@ -26,8 +27,9 @@ print("Difficulté : '%s'" % detailed_recipe['difficulty'])
 print("Budget : '%s'" % detailed_recipe['budget'])
 
 print("\nRecette pour %s :\n" % detailed_recipe['recipe_quantity'])
+
 for ingredient in detailed_recipe['ingredients']:  # List of ingredients
-    print("- %s" % ingredient)
+  print("ingrédient: %s quantité: %s unité: %s" % (ingredient['nom_ingredient'], ingredient['quantite'], ingredient['unite']))
 
 print("")
 

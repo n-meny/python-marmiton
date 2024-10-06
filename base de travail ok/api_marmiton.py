@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# base de l'api : 	'https://github.com/remaudcorentin-dev/python-marmiton', author='Corentin Remaud'
 
 from bs4 import BeautifulSoup
 
@@ -74,8 +75,35 @@ class Marmiton(object):
 
 	@staticmethod
 	def _get_ingredients(soup):
-		return [item.get_text().strip(' \t\n\r').replace("\xa0", " ") for item in soup.findAll("div", {"class": "MuiGrid-item"})]
+		# Extraire les valeurs des ingrédients
+		ingredient_names = soup.find_all('span', class_='ingredient-name')
+		ingredient_quantities = soup.find_all('span', class_='card-ingredient-quantity')
 
+		# # Boucle pour récupérer et afficher tous les noms et quantités d'ingrédients
+		# for ingredient_name, ingredient_quantity in zip(ingredient_names, ingredient_quantities):
+		# 	produit = ingredient_name.get_text().strip(' \t\n\r').replace("\xa0", " ")
+		# 	quantity = ingredient_quantity.get_text(strip=True)
+		# 	# Ajouter un espace entre le nombre et le texte
+		# 	quantity = re.sub(r'(\d)([^\d\s])', r'\1 \2', quantity)
+		# 	print(f"{quantity} {produit}")
+
+		ingredients = []
+		for ingredient_name, ingredient_quantity in zip(ingredient_names, ingredient_quantities):
+			produit = ingredient_name.get_text().strip(' \t\n\r').replace("\xa0", " ")
+			quantity = ingredient_quantity.get_text(strip=True)
+			# Ajouter un espace entre le nombre et le texte, en considérant le point comme numérique
+			quantity = re.sub(r'(\d)([^\d\s.])', r'\1 \2', quantity)
+			# Séparer la quantité et l'unité
+			parts = quantity.split(' ', 1)
+			quantite = parts[0]
+			unite = parts[1] if len(parts) > 1 else ""  # L'unité est la valeur en texte contenue dans quantity
+			ingredients.append({
+				"quantite": quantite,
+				"unite": unite,
+				"nom_ingredient": produit
+			})
+		return ingredients
+		
 	@staticmethod
 	def _get_author(soup):
 		return soup.find("div", text="Note de l'auteur :").parent.parent.findAll("div")[0].findAll("div")[1].get_text()
@@ -94,7 +122,8 @@ class Marmiton(object):
 
 	@staticmethod
 	def _get_rate(soup):
-		return soup.find("h1").parent.next_sibling.find_all("span")[0].get_text().split("/")[0]
+		chemin_css = "html.no-js body.body-domuser-fr div#content.marmiton div.recipeV2-container div.mrtn-content div.recipe-header__title div.recipe-header__rating-container div.recipe-header__rating a.recipe-header__rating-stars span.recipe-header__rating-text"
+		return soup.select(chemin_css)[0].get_text().split("/")[0]
 
 	@staticmethod
 	def _get_nb_comments(soup):
@@ -127,7 +156,11 @@ class Marmiton(object):
 
 	@staticmethod
 	def _get_recipe_quantity(soup):
-		return " ".join([span.get_text() for span in soup.find("button", {"class": "MuiIconButton-root"}).parent.find_all("span") if span.get_text()])
+		servings_info = soup.find('div', class_='mrtn-recette_ingredients-counter')
+		servings_nb = servings_info['data-servingsnb']
+		servings_unit = servings_info['data-servingsunit']
+		return f"{servings_nb} {servings_unit}"
+	
 
 	@classmethod
 	def get(cls, url):
